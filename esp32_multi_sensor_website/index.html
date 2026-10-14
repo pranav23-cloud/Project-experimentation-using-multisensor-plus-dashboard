@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101827">
+  <title>ESP32 Multi-Sensor Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body data-theme="dark">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">S</div>
+        <div>
+          <div class="brand-name">SENSOR<span>HUB</span></div>
+          <div class="brand-caption">MULTI-SENSOR PLATFORM</div>
+        </div>
+      </div>
+
+      <div class="sidebar-label">WORKSPACE</div>
+      <a class="nav-item active" href="#overview"><span class="nav-icon">▦</span> Overview</a>
+      <a class="nav-item" href="#sensors"><span class="nav-icon">◉</span> Sensors</a>
+      <a class="nav-item" href="#analytics"><span class="nav-icon">⌁</span> Analytics</a>
+
+      <div class="sidebar-bottom">
+        <div class="device-mini">
+          <div class="device-mini-top"><span class="pulse-dot"></span> DEVICE LINK</div>
+          <strong id="sidebarConnection">Disconnected</strong>
+          <small id="sidebarPort">USB serial not connected</small>
+        </div>
+        <div class="sidebar-footer">ESP32 · USB SERIAL · 115200 BAUD</div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">MONITORING / OVERVIEW</div>
+          <h1>Multi-Sensor Dashboard</h1>
+          <p class="page-subtitle">Live environmental and proximity monitoring</p>
+        </div>
+        <div class="top-actions">
+          <div class="connection-pill" id="connectionPill">
+            <span class="status-dot"></span><span id="connectionText">Disconnected</span>
+          </div>
+          <button class="icon-button" id="themeToggle" title="Switch theme" aria-label="Switch theme">☼</button>
+          <button class="button button-primary" id="connectBtn"><span>↔</span> Connect ESP32</button>
+          <button class="button button-outline hidden" id="disconnectBtn">Disconnect</button>
+        </div>
+      </header>
+
+      <section class="notice" id="browserNotice">
+        <span class="notice-icon">ⓘ</span>
+        <div><strong>USB connection required.</strong> Open this dashboard in Chrome or Edge on localhost or HTTPS, then
+          select your ESP32 serial port.</div>
+      </section>
+
+      <section class="section-heading" id="overview">
+        <div>
+          <h2>Live overview</h2>
+          <p>Latest values received from your ESP32</p>
+        </div>
+        <div class="live-indicator"><span class="pulse-dot"></span> LIVE DATA <span class="separator">·</span> <span
+            id="lastUpdated">Waiting for data</span></div>
+      </section>
+
+      <section class="metrics-grid" id="sensors">
+        <article class="metric-card accent-blue">
+          <div class="metric-top"><span class="metric-label">ULTRASONIC DISTANCE</span><span
+              class="metric-symbol">↔</span></div>
+          <div class="metric-value"><span id="distanceValue">--</span><small>cm</small></div>
+          <div class="metric-foot"><span class="metric-tag">HC-SR04</span><span id="distanceState">Awaiting
+              reading</span></div>
+        </article>
+        <article class="metric-card accent-orange">
+          <div class="metric-top"><span class="metric-label">DHT11 TEMPERATURE</span><span
+              class="metric-symbol">♨</span></div>
+          <div class="metric-value"><span id="dhtTempValue">--</span><small>°C</small></div>
+          <div class="metric-foot"><span class="metric-tag">DHT11</span><span id="dhtTempState">Awaiting reading</span>
+          </div>
+        </article>
+        <article class="metric-card accent-cyan">
+          <div class="metric-top"><span class="metric-label">DHT11 HUMIDITY</span><span class="metric-symbol">◌</span>
+          </div>
+          <div class="metric-value"><span id="dhtHumidityValue">--</span><small>%</small></div>
+          <div class="metric-foot"><span class="metric-tag">DHT11</span><span id="dhtHumidityState">Awaiting
+              reading</span></div>
+        </article>
+        <article class="metric-card accent-violet">
+          <div class="metric-top"><span class="metric-label">SHT20 TEMPERATURE</span><span
+              class="metric-symbol">♨</span></div>
+          <div class="metric-value"><span id="shtTempValue">--</span><small>°C</small></div>
+          <div class="metric-foot"><span class="metric-tag">SHT20</span><span id="shtTempState">Awaiting reading</span>
+          </div>
+        </article>
+        <article class="metric-card accent-green">
+          <div class="metric-top"><span class="metric-label">SHT20 HUMIDITY</span><span class="metric-symbol">◌</span>
+          </div>
+          <div class="metric-value"><span id="shtHumidityValue">--</span><small>%</small></div>
+          <div class="metric-foot"><span class="metric-tag">SHT20</span><span id="shtHumidityState">Awaiting
+              reading</span></div>
+        </article>
+        <article class="metric-card accent-pink">
+          <div class="metric-top"><span class="metric-label">RFID READER</span><span class="metric-symbol">▣</span>
+          </div>
+          <div class="rfid-value" id="rfidUid">No card detected</div>
+          <div class="metric-foot"><span class="metric-tag">RC522</span><span id="rfidState">Waiting for card</span>
+          </div>
+        </article>
+      </section>
+
+      <section class="content-grid" id="analytics">
+        <div class="panel chart-panel">
+          <div class="panel-header">
+            <div>
+              <h3>Sensor trends</h3>
+              <p>Live readings over time</p>
+            </div>
+            <select id="chartWindow" class="select-control" aria-label="Chart history window">
+              <option value="20">Last 20 points</option>
+              <option value="50" selected>Last 50 points</option>
+              <option value="100">Last 100 points</option>
+            </select>
+          </div>
+          <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+          <div class="chart-legend">
+            <span><i class="legend-dot orange"></i> DHT11 temp</span>
+            <span><i class="legend-dot violet"></i> SHT20 temp</span>
+            <span><i class="legend-dot cyan"></i> DHT11 humidity</span>
+            <span><i class="legend-dot green"></i> SHT20 humidity</span>
+          </div>
+        </div>
+
+        <div class="panel control-panel">
+          <div class="panel-header">
+            <div>
+              <h3>Device controls</h3>
+              <p>Manage ESP32 monitoring</p>
+            </div><span class="control-icon">⚙</span>
+          </div>
+          <div class="control-block">
+            <div class="control-row">
+              <div><strong>Monitoring</strong><small>Start or pause sensor updates</small></div><span
+                class="state-label" id="monitorState">RUNNING</span>
+            </div>
+            <div class="button-row">
+              <button class="button button-success" id="startBtn" disabled>Start</button>
+              <button class="button button-danger" id="stopBtn" disabled>Stop</button>
+            </div>
+          </div>
+          <div class="control-block">
+            <div class="control-row">
+              <div><strong>RFID reader</strong><small>Enable or disable card scanning</small></div><label
+                class="switch"><input type="checkbox" id="rfidToggle" checked disabled><span
+                  class="slider"></span></label>
+            </div>
+          </div>
+          <div class="control-block">
+            <label for="intervalSelect"><strong>Reading interval</strong><small>Allowed range: 2–60
+                seconds</small></label>
+            <div class="interval-row">
+              <select id="intervalSelect" class="select-control" disabled>
+                <option value="2000">2 seconds</option>
+                <option value="2500" selected>2.5 seconds</option>
+                <option value="5000">5 seconds</option>
+                <option value="10000">10 seconds</option>
+                <option value="30000">30 seconds</option>
+                <option value="60000">60 seconds</option>
+              </select>
+              <button class="button button-outline" id="applyIntervalBtn" disabled>Apply</button>
+            </div>
+          </div>
+          <div class="control-hint" id="controlHint">Connect your ESP32 to activate controls.</div>
+        </div>
+      </section>
+
+      <section class="bottom-grid">
+        <div class="panel analytics-panel">
+          <div class="panel-header">
+            <div>
+              <h3>Reading analytics</h3>
+              <p>Summary calculated from this browser session</p>
+            </div><span class="small-chip">SESSION</span>
+          </div>
+          <div class="analytics-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>PARAMETER</th>
+                  <th>MIN</th>
+                  <th>MAX</th>
+                  <th>AVERAGE</th>
+                </tr>
+              </thead>
+              <tbody id="analyticsBody">
+                <tr>
+                  <td colspan="4" class="empty-cell">Waiting for sensor readings…</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel export-panel">
+          <div class="panel-header">
+            <div>
+              <h3>Data export</h3>
+              <p>Download collected readings</p>
+            </div><span class="export-icon">⇩</span>
+          </div>
+          <div class="export-count"><strong id="recordCount">0</strong><span>records collected</span></div>
+          <button class="button button-primary export-button" id="exportBtn" disabled>⇩ Export CSV</button>
+          <p class="export-note">CSV includes timestamp, RFID and all sensor values collected during this session.</p>
+        </div>
+      </section>
+
+      <footer class="page-footer"><span> SENSORHUB · ESP32 MULTI-SENSOR PLATFORM</span><span>LOCAL USB SERIAL
+          MONITORING</span></footer>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/export.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/serial.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>
